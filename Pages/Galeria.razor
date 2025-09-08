@@ -1,0 +1,31 @@
+﻿@page "/galeria"
+@inject FotoPrint.Services.FileService FileSvc
+
+<h2 class="text-2xl font-semibold mb-4">Galeria</h2>
+
+@if (images is null)
+{
+    <p>Carregando...</p>
+}
+else if (images.Length == 0)
+{
+    <p>Nenhuma foto ainda.</p>
+}
+else
+{
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        @foreach (var img in images)
+        {
+            <img class="w-full aspect-square object-cover rounded-xl shadow" src="@($"/{img}")" />
+        }
+    </div>
+}
+
+@code {
+    string[]? images;
+
+    protected override void OnInitialized()
+    {
+        images = FileSvc.ListBackupImages();
+    }
+}

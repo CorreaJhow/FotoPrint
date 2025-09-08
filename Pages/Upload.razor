@@ -1,0 +1,194 @@
+﻿@page "/upload"
+@inject FotoPrint.Services.FileService FileSvc
+@inject FotoPrint.Services.ConfigService ConfigSvc
+
+@using Microsoft.AspNetCore.Components.Forms
+
+<div class="container mx-auto px-4 py-8">
+    <div class="text-center mb-8">
+        <h1 class="text-4xl font-bold text-gray-800 mb-2">
+            <i class="fas fa-camera mr-3 text-blue-600"></i>
+            FotoPrint
+        </h1>
+        <p class="text-lg text-gray-600">Impressão Instantânea de Fotos</p>
+    </div>
+
+    <div class="max-w-4xl mx-auto">
+        <div class="bg-white rounded-2xl shadow-xl p-8">
+            <h2 class="text-3xl font-bold text-center text-gray-800 mb-6">
+                <i class="fas fa-cloud-upload-alt text-blue-600 mr-3"></i>
+                Upload de Fotos
+            </h2>
+
+            @if (!string.IsNullOrEmpty(Message))
+            {
+                <div class="mb-6 p-4 rounded-lg text-center font-medium @(MsgStyle)">
+                    @Message
+                </div>
+            }
+
+            <p class="text-center text-gray-600 mb-8 text-lg">
+                Selecione exatamente <span class="font-semibold text-blue-600">@Slots</span> arquivos (JPG/PNG, até 5MB cada).
+            </p>
+
+            <div class="flex justify-center gap-8 mb-10 flex-wrap">
+                <!-- Slot 0 -->
+                <div class="upload-slot flex flex-col items-center" style="width:180px;">
+                    @if (Previews.Count > 0 && Previews[0] != null)
+                    {
+                        <img src="@Previews[0]" class="w-36 h-36 object-cover rounded-xl shadow-md mb-3 border border-gray-300 preview-image" />
+                    }
+                    else
+                    {
+                        <div class="w-36 h-36 flex items-center justify-center rounded-xl border-2 border-dashed border-gray-400 mb-3 text-gray-400 select-none bg-gray-50">
+                            <i class="fas fa-image text-3xl opacity-50 mb-2"></i><span class="text-sm">Preview</span>
+                        </div>
+                    }
+                    <InputFile class="hidden" id="file-input-0"
+                               OnChange="@(async e => await OnFileSelected(e, 0))" accept="image/jpeg,image/png" />
+                    <label for="file-input-0"
+                           class="file-label bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium py-2 px-4 rounded-lg cursor-pointer transition flex items-center justify-center w-full">
+                        <i class="fas fa-upload mr-2"></i>Selecionar
+                    </label>
+                    <p class="text-xs mt-2 text-gray-500 font-medium">Foto 1</p>
+                </div>
+
+                <!-- Slot 1 -->
+                <div class="upload-slot flex flex-col items-center" style="width:180px;">
+                    @if (Previews.Count > 1 && Previews[1] != null)
+                    {
+                        <img src="@Previews[1]" class="w-36 h-36 object-cover rounded-xl shadow-md mb-3 border border-gray-300 preview-image" />
+                    }
+                    else
+                    {
+                        <div class="w-36 h-36 flex items-center justify-center rounded-xl border-2 border-dashed border-gray-400 mb-3 text-gray-400 select-none bg-gray-50">
+                            <i class="fas fa-image text-3xl opacity-50 mb-2"></i><span class="text-sm">Preview</span>
+                        </div>
+                    }
+                    <InputFile class="hidden" id="file-input-1"
+                               OnChange="@(async e => await OnFileSelected(e, 1))" accept="image/jpeg,image/png" />
+                    <label for="file-input-1"
+                           class="file-label bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium py-2 px-4 rounded-lg cursor-pointer transition flex items-center justify-center w-full">
+                        <i class="fas fa-upload mr-2"></i>Selecionar
+                    </label>
+                    <p class="text-xs mt-2 text-gray-500 font-medium">Foto 2</p>
+                </div>
+
+                <!-- Slot 2 só se Slots for 3 -->
+                @if (Slots >= 3)
+                {
+                    <div class="upload-slot flex flex-col items-center" style="width:180px;">
+                        @if (Previews.Count > 2 && Previews[2] != null)
+                        {
+                            <img src="@Previews[2]" class="w-36 h-36 object-cover rounded-xl shadow-md mb-3 border border-gray-300 preview-image" />
+                        }
+                        else
+                        {
+                            <div class="w-36 h-36 flex items-center justify-center rounded-xl border-2 border-dashed border-gray-400 mb-3 text-gray-400 select-none bg-gray-50">
+                                <i class="fas fa-image text-3xl opacity-50 mb-2"></i><span class="text-sm">Preview</span>
+                            </div>
+                        }
+                        <InputFile class="hidden" id="file-input-2"
+                                   OnChange="@(async e => await OnFileSelected(e, 2))" accept="image/jpeg,image/png" />
+                        <label for="file-input-2"
+                               class="file-label bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium py-2 px-4 rounded-lg cursor-pointer transition flex items-center justify-center w-full">
+                            <i class="fas fa-upload mr-2"></i>Selecionar
+                        </label>
+                        <p class="text-xs mt-2 text-gray-500 font-medium">Foto 3</p>
+                    </div>
+                }
+            </div>
+
+            <div class="flex justify-center">
+                <button class="px-12 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl text-xl font-bold w-full max-w-md disabled:opacity-50 disabled:cursor-not-allowed send-button hover:from-green-600 hover:to-green-700"
+                        @onclick="ConfirmUpload" disabled="@(!CanSend)">
+                    <span>Enviar @(SelectedFiles.Count(f => f != null)) foto(s)</span>
+                    <i class="fas fa-paper-plane ml-2"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    int Slots = 2;
+    string? Message;
+    string MsgStyle = "bg-blue-50 text-blue-800 border border-blue-300";
+    List<string?> Previews = new();
+    List<IBrowserFile?> SelectedFiles = new();
+
+    protected override void OnInitialized()
+    {
+        var cfg = ConfigSvc.Load();
+        Slots = cfg.fotosPorLote is >= 2 and <= 3 ? cfg.fotosPorLote : 2;
+        Previews = Enumerable.Range(0, Slots).Select(_ => (string?)null).ToList();
+        SelectedFiles = Enumerable.Range(0, Slots).Select(_ => (IBrowserFile?)null).ToList();
+    }
+
+    bool CanSend => SelectedFiles.All(f => f != null);
+
+    async Task OnFileSelected(InputFileChangeEventArgs e, int slotIndex)
+    {
+        Message = null;
+        MsgStyle = "bg-blue-50 text-blue-800 border border-blue-300";
+
+        var file = e.File;
+        if (file == null)
+            return;
+
+        if (file.Size > 5 * 1024 * 1024)
+        {
+            Message = $"Arquivo muito grande: {file.Name}";
+            MsgStyle = "bg-red-100 text-red-800 border border-red-300";
+            Previews[slotIndex] = null;
+            SelectedFiles[slotIndex] = null;
+            StateHasChanged();
+            return;
+        }
+
+        if (!new[] { "image/jpeg", "image/png" }.Contains(file.ContentType))
+        {
+            Message = $"Tipo de arquivo não suportado: {file.Name}";
+            MsgStyle = "bg-red-100 text-red-800 border border-red-300";
+            Previews[slotIndex] = null;
+            SelectedFiles[slotIndex] = null;
+            StateHasChanged();
+            return;
+        }
+
+        using var ms = new MemoryStream();
+        await file.OpenReadStream(5 * 1024 * 1024).CopyToAsync(ms);
+        var base64 = Convert.ToBase64String(ms.ToArray());
+        var mime = file.ContentType;
+        Previews[slotIndex] = $"data:{mime};base64,{base64}";
+        SelectedFiles[slotIndex] = file;
+        StateHasChanged();
+    }
+
+    async Task ConfirmUpload()
+    {
+        if (!CanSend)
+        {
+            Message = $"Por favor, selecione exatamente {Slots} arquivo(s).";
+            MsgStyle = "bg-yellow-50 text-yellow-800 border border-yellow-300";
+            return;
+        }
+        Message = "Enviando fotos...";
+        MsgStyle = "bg-blue-50 text-blue-800 border border-blue-300";
+        StateHasChanged();
+
+        var filesToSend = SelectedFiles.Where(f => f != null).ToList();
+
+        var (ok, msg, _) = await FileSvc.SaveUploadsAsync(filesToSend);
+        Message = msg;
+        MsgStyle = ok
+            ? "bg-green-50 text-green-800 border border-green-300"
+            : "bg-red-50 text-red-800 border border-red-300";
+        if (ok)
+        {
+            SelectedFiles = Enumerable.Range(0, Slots).Select(_ => (IBrowserFile?)null).ToList();
+            Previews = Enumerable.Range(0, Slots).Select(_ => (string?)null).ToList();
+        }
+        StateHasChanged();
+    }
+}

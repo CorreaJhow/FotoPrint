@@ -1,0 +1,42 @@
+@page "/admin"
+@inject FotoPrint.Services.ConfigService ConfigSvc
+
+<h2 class="text-2xl font-semibold mb-4">Admin</h2>
+
+@if (!string.IsNullOrEmpty(Message))
+{
+    <div class="mb-4 p-3 rounded bg-green-50 text-green-800">@Message</div>
+}
+
+<EditForm Model="cfg" OnValidSubmit="Save">
+    <DataAnnotationsValidator />
+    <div class="grid md:grid-cols-2 gap-4 max-w-xl">
+        <div>
+            <label class="block text-sm text-gray-600">Intervalo de impressão (segundos)</label>
+            <InputNumber class="w-full border rounded px-3 py-2" @bind-Value="cfg.intervaloImpressaoSegundos" />
+        </div>
+        <div>
+            <label class="block text-sm text-gray-600">Fotos por lote (2 ou 3)</label>
+            <InputNumber class="w-full border rounded px-3 py-2" @bind-Value="cfg.fotosPorLote" />
+        </div>
+    </div>
+    <button type="submit" class="mt-4 px-5 py-2 bg-blue-600 text-white rounded-xl">Salvar</button>
+</EditForm>
+
+@code {
+    FotoPrint.Models.Settings cfg = new();
+    string? Message;
+
+    protected override void OnInitialized()
+    {
+        cfg = ConfigSvc.Load();
+    }
+
+    void Save()
+    {
+        if (cfg.fotosPorLote < 2 || cfg.fotosPorLote > 3) cfg.fotosPorLote = 2;
+        if (cfg.intervaloImpressaoSegundos < 5) cfg.intervaloImpressaoSegundos = 5;
+        ConfigSvc.Save(cfg);
+        Message = "Configurações salvas.";
+    }
+}
