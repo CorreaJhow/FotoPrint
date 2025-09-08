@@ -7,17 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Remove="Pages\Admin.razor" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Folder Include="wwwroot\Backup\" />
     <Folder Include="wwwroot\Impressao\" />
     <Folder Include="wwwroot\Staging\" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="Pages\Admin.razor" />
   </ItemGroup>
 
   <ProjectExtensions><VisualStudio><UserProperties config_1json__JsonSchema="https://blockprotocol.org/schemas/block-metadata.json" /></VisualStudio></ProjectExtensions>
