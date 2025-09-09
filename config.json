@@ -1,6 +1,6 @@
 {
-  "intervaloImpressaoSegundos": 5,
-  "fotosPorLote": 3,
+  "intervaloImpressaoSegundos": 10,
+  "fotosPorLote": 2,
   "caminhoPastaImpressora": "C:\\Users\\jhona\\OneDrive\\\u00C1rea de Trabalho\\impressora",
   "caminhoPastaBackup": "C:\\Users\\jhona\\OneDrive\\\u00C1rea de Trabalho\\casamento-alvaro-carminha"
 }
