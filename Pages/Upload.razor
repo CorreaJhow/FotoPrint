@@ -3,6 +3,8 @@
 @inject FotoPrint.Services.ConfigService ConfigSvc
 
 @using Microsoft.AspNetCore.Components.Forms
+@using FotoPrint.Shared
+
 
 <div class="container mx-auto px-4 py-8">
     <div class="text-center mb-8">
@@ -22,9 +24,16 @@
 
             @if (!string.IsNullOrEmpty(Message))
             {
-                <div class="mb-6 p-4 rounded-lg text-center font-medium @(MsgStyle)">
-                    @Message
-                </div>
+                @if (isEnviando)
+                {
+                    <LoadingStatus Message="Enviando fotos para impressão, por favor aguarde..." />
+                }
+                else
+                {
+                    <div class="mb-6 p-4 rounded-lg text-center font-medium @(MsgStyle)">
+                        @Message
+                    </div>
+                }
             }
 
             <p class="text-center text-gray-600 mb-8 text-lg">
@@ -165,6 +174,8 @@
         StateHasChanged();
     }
 
+    bool isEnviando = false;
+
     async Task ConfirmUpload()
     {
         if (!CanSend)
@@ -173,17 +184,22 @@
             MsgStyle = "bg-yellow-50 text-yellow-800 border border-yellow-300";
             return;
         }
-        Message = "Enviando fotos...";
+
+        isEnviando = true;
+        Message = "Enviando fotos para impressão, por favor aguarde...";
         MsgStyle = "bg-blue-50 text-blue-800 border border-blue-300";
         StateHasChanged();
 
         var filesToSend = SelectedFiles.Where(f => f != null).ToList();
 
         var (ok, msg, _) = await FileSvc.SaveUploadsAsync(filesToSend);
+
+        isEnviando = false;
         Message = msg;
         MsgStyle = ok
             ? "bg-green-50 text-green-800 border border-green-300"
             : "bg-red-50 text-red-800 border border-red-300";
+
         if (ok)
         {
             SelectedFiles = Enumerable.Range(0, Slots).Select(_ => (IBrowserFile?)null).ToList();
@@ -191,4 +207,5 @@
         }
         StateHasChanged();
     }
+
 }

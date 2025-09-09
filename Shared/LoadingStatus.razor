@@ -1,0 +1,12 @@
+﻿<div class="flex flex-col items-center justify-center p-4 bg-blue-50 rounded-lg max-w-md mx-auto mb-6">
+    <svg class="animate-spin h-10 w-10 text-blue-600 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+    </svg>
+    <div class="text-blue-700 font-semibold">@Message</div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Message { get; set; } = "Carregando...";
+}

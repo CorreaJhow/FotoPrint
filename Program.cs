@@ -8,7 +8,7 @@ builder.Services.AddServerSideBlazor();
 
 builder.Services.AddSingleton<ConfigService>();
 builder.Services.AddSingleton<FileService>();
-builder.Services.AddHostedService<PrintSchedulerService>();
+builder.Services.AddSingleton<PrintSchedulerService>();
 builder.Services.AddSingleton<AdminConfigService>();
 
 // Ouvir em todas interfaces na porta 5000 (HTTP)

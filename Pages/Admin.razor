@@ -1,62 +1,146 @@
 ﻿@page "/admin"
 @inject FotoPrint.Services.ConfigService ConfigSvc
 @inject AdminConfigService AdminCfg
-
+@inject IJSRuntime JS
 @using System.ComponentModel.DataAnnotations
-
-@* =========================================
-   LOGIN PROTECTED ADMIN PAGE
-   ========================================= *@
 
 @if (!IsLoggedIn)
 {
-    <div class="max-w-sm mx-auto bg-white rounded-xl shadow-lg p-8 mt-16">
-        <h2 class="text-2xl font-bold text-center mb-6">Área Administrativa</h2>
-        <input class="block w-full mb-3 px-3 py-2 border rounded-lg"
-               @bind="InputUser" placeholder="Usuário" />
-        <input class="block w-full mb-3 px-3 py-2 border rounded-lg" type="password"
-               @bind="InputPassword" placeholder="Senha" />
-        <button class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-bold"
+    <div class="max-w-md mx-auto bg-white rounded-2xl shadow-xl p-8 mt-16">
+        <h2 class="text-3xl font-bold text-center mb-6 text-gray-800">
+            Área Administrativa
+        </h2>
+        <input class="block w-full mb-4 px-4 py-3 border rounded-xl border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+               @bind="InputUser" placeholder="Usuário" autocomplete="username" />
+        <input class="block w-full mb-4 px-4 py-3 border rounded-xl border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+               type="password" @bind="InputPassword" placeholder="Senha" autocomplete="current-password" />
+        <button class="w-full px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition"
                 @onclick="TryLogin">
             Entrar
         </button>
         @if (!string.IsNullOrWhiteSpace(LoginError))
         {
-            <div class="mt-2 text-red-600 text-center">@LoginError</div>
+            <div class="mt-4 text-red-600 text-center font-medium">@LoginError</div>
         }
     </div>
 }
 else
 {
-    <h2 class="text-2xl font-semibold mb-4">Admin</h2>
+    <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl p-10 mt-12">
+        <h2 class="text-3xl font-bold mb-6 text-gray-800">Configurações Administrativas</h2>
+        @if (!string.IsNullOrEmpty(Message))
+        {
+            <div class="mb-6 p-4 rounded-lg bg-green-50 text-green-800 border border-green-300 font-medium">@Message</div>
+        }
+        <EditForm Model="cfg" OnValidSubmit="Save" class="space-y-6">
+            <DataAnnotationsValidator />
 
-    @if (!string.IsNullOrEmpty(Message))
-    {
-        <div class="mb-4 p-3 rounded bg-green-50 text-green-800">@Message</div>
-    }
+            <div>
+                <label class="block text-sm text-gray-600 mb-2 font-semibold">
+                    Intervalo de impressão (segundos)
+                </label>
+                <InputNumber id="intervaloImpressao" class="w-full px-4 py-3 border rounded-xl border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                             @bind-Value="cfg.intervaloImpressaoSegundos" />
+            </div>
 
-    <EditForm Model="cfg" OnValidSubmit="Save">
-        <DataAnnotationsValidator />
-        <div class="grid md:grid-cols-2 gap-4 max-w-xl">
             <div>
-                <label class="block text-sm text-gray-600">Intervalo de impressão (segundos)</label>
-                <InputNumber class="w-full border rounded px-3 py-2" @bind-Value="cfg.intervaloImpressaoSegundos" />
+                <label class="block text-sm text-gray-600 mb-3 font-semibold">Fotos por lote</label>
+                <div class="flex gap-4">
+                    <button type="button"
+                            class="flex-1 py-3 rounded-xl font-semibold transition
+                                           @(cfg.fotosPorLote == 2 ? "bg-blue-600 text-white" : "bg-blue-50 text-blue-700 hover:bg-blue-100")"
+                            @onclick="() => SelectFotosPorLote(2)">
+                        2
+                    </button>
+                    <button type="button"
+                            class="flex-1 py-3 rounded-xl font-semibold transition
+                                           @(cfg.fotosPorLote == 3 ? "bg-blue-600 text-white" : "bg-blue-50 text-blue-700 hover:bg-blue-100")"
+                            @onclick="() => SelectFotosPorLote(3)">
+                        3
+                    </button>
+                </div>
             </div>
-            <div>
-                <label class="block text-sm text-gray-600">Fotos por lote (2 ou 3)</label>
-                <InputNumber class="w-full border rounded px-3 py-2" @bind-Value="cfg.fotosPorLote" />
+
+            <div class="space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-start sm:gap-4">
+                    <div class="flex-1">
+                        <label class="block text-sm text-gray-600 mb-2 font-semibold" for="caminhoImpressora">
+                            Pasta de Impressora
+                        </label>
+                        <InputText id="caminhoImpressora" class="w-full px-4 py-3 border rounded-xl border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                   @bind-Value="cfg.caminhoPastaImpressora"
+                                   placeholder="Caminho completo da pasta para impressora" />
+                    </div>
+                    <div class="text-center mt-1 sm:mt-0 flex flex-col gap-1">
+                        <div class="text-xs text-gray-500 select-none mb-1">Ctrl+V</div>
+                        <button type="button"
+                                class="px-4 py-3 rounded-xl bg-gray-200 hover:bg-gray-300 text-gray-700 flex items-center justify-center"
+                                @onclick="() => PasteFromClipboard(nameof(cfg.caminhoPastaImpressora))" title="Colar caminho">
+                            📋
+                        </button>
+                        <button type="button"
+                                class="px-4 py-3 rounded-xl bg-green-200 hover:bg-green-300 text-green-800 font-semibold"
+                                @onclick="() => TestarDiretorio(cfg.caminhoPastaImpressora)">
+                            Testar pasta
+                        </button>
+                        @if (!string.IsNullOrEmpty(TestMessageImpressora))
+                        {
+                            <div class="mt-2 p-3 rounded @TestMsgStyleImpressora whitespace-pre-line text-center max-w-md mx-auto">
+                                @TestMessageImpressora
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="flex flex-col sm:flex-row sm:items-start sm:gap-4">
+                    <div class="flex-1">
+                        <label class="block text-sm text-gray-600 mb-2 font-semibold" for="caminhoBackup">
+                            Pasta de Backup
+                        </label>
+                        <InputText id="caminhoBackup" class="w-full px-4 py-3 border rounded-xl border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                   @bind-Value="cfg.caminhoPastaBackup"
+                                   placeholder="Caminho completo da pasta para backup" />
+                    </div>
+                    <div class="text-center mt-1 sm:mt-0 flex flex-col gap-1">
+                        <div class="text-xs text-gray-500 select-none mb-1">Ctrl+V</div>
+                        <button type="button"
+                                class="px-4 py-3 rounded-xl bg-gray-200 hover:bg-gray-300 text-gray-700 flex items-center justify-center"
+                                @onclick="() => PasteFromClipboard(nameof(cfg.caminhoPastaBackup))" title="Colar caminho">
+                            📋
+                        </button>
+                        <button type="button"
+                                class="px-4 py-3 rounded-xl bg-green-200 hover:bg-green-300 text-green-800 font-semibold"
+                                @onclick="() => TestarDiretorio(cfg.caminhoPastaBackup)">
+                            Testar pasta
+                        </button>
+                        @if (!string.IsNullOrEmpty(TestMessageBackup))
+                        {
+                            <div class="mt-2 p-3 rounded @TestMsgStyleBackup whitespace-pre-line text-center max-w-md mx-auto">
+                                @TestMessageBackup
+                            </div>
+                        }
+                    </div>
+                </div>
             </div>
-        </div>
-        <button type="submit" class="mt-4 px-5 py-2 bg-blue-600 text-white rounded-xl">Salvar</button>
-    </EditForm>
-    <button class="mt-4 px-5 py-2 bg-gray-400 text-white rounded-xl" @onclick="Logout">Sair</button>
+
+            <div class="flex flex-col md:flex-row md:justify-between gap-4 mt-8">
+                <button type="submit"
+                        class="flex-1 px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition">
+                    Salvar
+                </button>
+                <button type="button"
+                        class="flex-1 px-6 py-3 bg-gray-400 text-white rounded-xl font-semibold hover:bg-gray-500 transition"
+                        @onclick="Logout">
+                    Sair
+                </button>
+            </div>
+        </EditForm>
+    </div>
 }
 
 @code {
     // ========== LOGIN logic ==========
     bool IsLoggedIn = false;
     string InputUser = "", InputPassword = "", LoginError = "";
-
     void TryLogin()
     {
         var cfgAdmin = AdminCfg.Load();
@@ -70,7 +154,6 @@ else
             LoginError = "Usuário ou senha inválidos";
         }
     }
-
     void Logout()
     {
         IsLoggedIn = false;
@@ -78,21 +161,103 @@ else
         InputPassword = "";
         LoginError = "";
     }
-
     // ========== Admin Panel logic ==========
     FotoPrint.Models.Settings cfg = new();
+
     string? Message;
+
+    string? TestMessageImpressora;
+    string TestMsgStyleImpressora = "";
+
+    string? TestMessageBackup;
+    string TestMsgStyleBackup = "";
 
     protected override void OnInitialized()
     {
         cfg = ConfigSvc.Load();
+        if (cfg.fotosPorLote != 2 && cfg.fotosPorLote != 3)
+            cfg.fotosPorLote = 2; // default para 2
+    }
+
+    void SelectFotosPorLote(int value)
+    {
+        cfg.fotosPorLote = value;
     }
 
     void Save()
     {
-        if (cfg.fotosPorLote < 2 || cfg.fotosPorLote > 3) cfg.fotosPorLote = 2;
+        if (cfg.fotosPorLote != 2 && cfg.fotosPorLote != 3) cfg.fotosPorLote = 2;
         if (cfg.intervaloImpressaoSegundos < 5) cfg.intervaloImpressaoSegundos = 5;
+        if (string.IsNullOrWhiteSpace(cfg.caminhoPastaImpressora))
+            cfg.caminhoPastaImpressora = "C:\\FotoPrint\\Impressao"; // valor default
+        if (string.IsNullOrWhiteSpace(cfg.caminhoPastaBackup))
+            cfg.caminhoPastaBackup = "C:\\FotoPrint\\Backup"; // valor default
         ConfigSvc.Save(cfg);
         Message = "Configurações salvas.";
+    }
+
+    async Task PasteFromClipboard(string propName)
+    {
+        try
+        {
+            var text = await JS.InvokeAsync<string>("navigator.clipboard.readText");
+            if (propName == nameof(cfg.caminhoPastaImpressora))
+            {
+                cfg.caminhoPastaImpressora = text;
+            }
+            else if (propName == nameof(cfg.caminhoPastaBackup))
+            {
+                cfg.caminhoPastaBackup = text;
+            }
+            StateHasChanged();
+        }
+        catch
+        {
+            // Ignora falha no acesso ao clipboard
+        }
+    }
+
+    async Task TestarDiretorio(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            await JS.InvokeVoidAsync("alert", "Caminho não pode ser vazio.");
+            return;
+        }
+
+        try
+        {
+            // Criar um arquivo de teste único
+            var fileName = Path.Combine(path, $"test_{Guid.NewGuid()}.tmp");
+            await File.WriteAllTextAsync(fileName, "teste de permissão");
+
+            // Apagar o arquivo depois
+            File.Delete(fileName);
+
+            if (path == cfg.caminhoPastaImpressora)
+            {
+                TestMessageImpressora = $"Diretório válido/acessível!";
+                TestMsgStyleImpressora = "bg-green-50 text-green-800 border border-green-300";
+            }
+            else if (path == cfg.caminhoPastaBackup)
+            {
+                TestMessageBackup = $"Diretório válido/acessível!";
+                TestMsgStyleBackup = "bg-green-50 text-green-800 border border-green-300";
+            }
+        }
+        catch (Exception ex)
+        {
+            if (path == cfg.caminhoPastaImpressora)
+            {
+                TestMessageImpressora = $"Erro ao acessar diretório:\n{path}\nTente outro!";
+                TestMsgStyleImpressora = "bg-red-50 text-red-800 border border-red-300";
+            }
+            else if (path == cfg.caminhoPastaBackup)
+            {
+                TestMessageBackup = $"Erro ao acessar diretório:\n{path}\nTente outro!";
+                TestMsgStyleBackup = "bg-red-50 text-red-800 border border-red-300";
+            }
+        }
+        StateHasChanged();
     }
 }
