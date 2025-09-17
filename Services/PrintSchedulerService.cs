@@ -22,12 +22,32 @@ namespace FotoPrint.Services
         {
             _logger = logger;
             _config = config;
+
+            var cfg = _config.Load();
+
+            // Pasta staging: geralmente temporária, pode ficar no wwwroot 
             _staging = Path.Combine(env.WebRootPath, "Staging");
-            _impressao = Path.Combine(env.WebRootPath, "Impressao");
-            _backup = Path.Combine(env.WebRootPath, "Backup");
-            Directory.CreateDirectory(_staging);
-            Directory.CreateDirectory(_impressao);
-            Directory.CreateDirectory(_backup);
+            if (!Directory.Exists(_staging)) Directory.CreateDirectory(_staging);
+
+            // Pasta Impressão: prioriza config absoluto válido, senão usa pasta padrão fora do wwwroot
+            if (!string.IsNullOrWhiteSpace(cfg.caminhoPastaImpressora) && Path.IsPathRooted(cfg.caminhoPastaImpressora))
+                _impressao = cfg.caminhoPastaImpressora;
+            else
+                _impressao = Path.Combine(env.ContentRootPath, "Impressao"); // pasta na raiz do projeto, fora do wwwroot
+
+            if (!Directory.Exists(_impressao)) Directory.CreateDirectory(_impressao);
+
+            // Pasta Backup: prioritiza config absoluto válido ou pasta padrão fora do wwwroot
+            if (!string.IsNullOrWhiteSpace(cfg.caminhoPastaBackup) && Path.IsPathRooted(cfg.caminhoPastaBackup))
+                _backup = cfg.caminhoPastaBackup;
+            else
+                _backup = Path.Combine(env.ContentRootPath, "Backup");
+
+            if (!Directory.Exists(_backup)) Directory.CreateDirectory(_backup);
+
+            _logger.LogInformation($"Staging folder: {_staging}");
+            _logger.LogInformation($"Impressao folder: {_impressao}");
+            _logger.LogInformation($"Backup folder: {_backup}");
         }
 
         /// <summary>

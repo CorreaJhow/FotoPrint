@@ -31,3 +31,28 @@
         opacity: 0.8;
     }
 }
+
+.whatsapp-icon {
+    position: fixed;
+    bottom: 70px; /* 20px (instagram) + 40px (tamanho) + 10px (espaçamento) */
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    background-color: #25D366; /* verde do WhatsApp */
+    border-radius: 50%;
+    transform: translate(0px, 0.5px); /* Ajuste os valores até centralizar */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    z-index: 1000;
+    cursor: pointer;
+    animation: pulse 2.5s infinite ease-in-out;
+    transition: background-color 0.3s ease;
+}
+
+    .whatsapp-icon:hover {
+        padding: 2px;
+        background-color: #1ebe57; /* verde mais escuro no hover */
+    }
+

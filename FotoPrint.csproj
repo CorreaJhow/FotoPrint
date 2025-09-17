@@ -7,8 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="wwwroot\Backup\" />
-    <Folder Include="wwwroot\Impressao\" />
     <Folder Include="wwwroot\Staging\" />
   </ItemGroup>
 

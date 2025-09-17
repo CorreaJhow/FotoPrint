@@ -1,6 +1,4 @@
 ﻿using Microsoft.AspNetCore.Components.Forms;
-using System.IO;
-using System.Threading;
 
 namespace FotoPrint.Services
 {
@@ -13,7 +11,7 @@ namespace FotoPrint.Services
         private string _backup;
         private string _impressora;
         private static readonly string[] Allowed = new[] { "image/jpeg", "image/png" };
-        private const long MaxBytes = 5 * 1024 * 1024; // 5MB
+        private const long MaxBytes = 5 * 2048 * 2048; // 5MB
 
         public FileService(IWebHostEnvironment env, ConfigService configService, PrintSchedulerService printScheduler)
         {

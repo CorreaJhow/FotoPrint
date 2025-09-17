@@ -12,7 +12,7 @@ builder.Services.AddSingleton<PrintSchedulerService>();
 builder.Services.AddSingleton<AdminConfigService>();
 
 // Ouvir em todas interfaces na porta 5000 (HTTP)
-builder.WebHost.UseUrls("http://0.0.0.0:5000"); //http://localhost:5000
+builder.WebHost.UseUrls("http://0.0.0.0:5000");
 
 var app = builder.Build();
 
