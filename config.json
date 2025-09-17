@@ -2,5 +2,6 @@
   "intervaloImpressaoSegundos": 10,
   "fotosPorLote": 2,
   "caminhoPastaImpressora": "C:\\FotoPrint\\Impressao",
-  "caminhoPastaBackup": "C:\\FotoPrint\\Backup"
+  "caminhoPastaBackup": "C:\\FotoPrint\\Backup",
+  "titulo": "Tico \u0026 Ta"
 }
