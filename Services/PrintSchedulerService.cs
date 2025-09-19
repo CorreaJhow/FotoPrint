@@ -1,14 +1,4 @@
-﻿using FotoPrint.Models;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace FotoPrint.Services
+﻿namespace FotoPrint.Services
 {
     public class PrintSchedulerService : BackgroundService
     {
@@ -17,38 +7,42 @@ namespace FotoPrint.Services
         private readonly string _staging;
         private readonly string _impressao;
         private readonly string _backup;
+        private readonly string _transicao;
+        private int _lastTransitionCount = 0; // Contador visível
 
         public PrintSchedulerService(ILogger<PrintSchedulerService> logger, IWebHostEnvironment env, ConfigService config)
         {
             _logger = logger;
             _config = config;
-
             var cfg = _config.Load();
 
-            // Pasta staging: geralmente temporária, pode ficar no wwwroot 
             _staging = Path.Combine(env.WebRootPath, "Staging");
             if (!Directory.Exists(_staging)) Directory.CreateDirectory(_staging);
 
-            // Pasta Impressão: prioriza config absoluto válido, senão usa pasta padrão fora do wwwroot
             if (!string.IsNullOrWhiteSpace(cfg.caminhoPastaImpressora) && Path.IsPathRooted(cfg.caminhoPastaImpressora))
                 _impressao = cfg.caminhoPastaImpressora;
             else
-                _impressao = Path.Combine(env.ContentRootPath, "Impressao"); // pasta na raiz do projeto, fora do wwwroot
-
+                _impressao = Path.Combine(env.ContentRootPath, "Impressao");
             if (!Directory.Exists(_impressao)) Directory.CreateDirectory(_impressao);
 
-            // Pasta Backup: prioritiza config absoluto válido ou pasta padrão fora do wwwroot
             if (!string.IsNullOrWhiteSpace(cfg.caminhoPastaBackup) && Path.IsPathRooted(cfg.caminhoPastaBackup))
                 _backup = cfg.caminhoPastaBackup;
             else
                 _backup = Path.Combine(env.ContentRootPath, "Backup");
-
             if (!Directory.Exists(_backup)) Directory.CreateDirectory(_backup);
+
+            if (!string.IsNullOrWhiteSpace(cfg.caminhoPastaTransicao) && Path.IsPathRooted(cfg.caminhoPastaTransicao))
+                _transicao = cfg.caminhoPastaTransicao;
+            else
+                _transicao = Path.Combine(env.ContentRootPath, "Transicao");
+            if (!Directory.Exists(_transicao)) Directory.CreateDirectory(_transicao);
 
             _logger.LogInformation($"Staging folder: {_staging}");
             _logger.LogInformation($"Impressao folder: {_impressao}");
             _logger.LogInformation($"Backup folder: {_backup}");
+            _logger.LogInformation($"Transicao folder: {_transicao}");
         }
+
 
         /// <summary>
         /// Método para ser chamado após o envio, que aguarda o intervalo e move as fotos para impressão e backup conforme lote.
@@ -95,14 +89,48 @@ namespace FotoPrint.Services
 
             _logger.LogInformation("Processo de impressão finalizado");
         }
-
-        /// <summary>
-        /// Para compatibilidade com BackgroundService, fica sobrescrito porém vazio.
-        /// </summary>
-        protected override Task ExecuteAsync(CancellationToken stoppingToken)
+        public void RegistrarUploadNaFila(string arquivo)
         {
-            // Não fazer nada em loop automático, processo será disparado por método externo
-            return Task.CompletedTask;
+            // Este método pode ser chamado após o upload para backup+movimentação para transition
+            var destBackup = Path.Combine(_backup, Path.GetFileName(arquivo));
+            if (!File.Exists(destBackup))
+                File.Copy(arquivo, destBackup, true);
+
+            var destTransicao = Path.Combine(_transicao, Path.GetFileName(arquivo));
+            if (!File.Exists(destTransicao))
+                File.Copy(arquivo, destTransicao, true);
+        }
+
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        {
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                var cfg = _config.Load();
+                var arquivosFila = Directory.Exists(_transicao) ?
+                    Directory.GetFiles(_transicao).OrderBy(File.GetCreationTime).ToList() :
+                    new List<string>();
+
+                _lastTransitionCount = arquivosFila.Count;
+
+                // Só processa se atingir o lote configurado!
+                if (arquivosFila.Count >= cfg.fotosPorLote)
+                {
+                    foreach (var file in arquivosFila)
+                    {
+                        var destImpressora = Path.Combine(_impressao, Path.GetFileName(file));
+                        if (!File.Exists(destImpressora))
+                            File.Move(file, destImpressora);
+                    }
+                    foreach (var file in Directory.GetFiles(_transicao))
+                        File.Delete(file);
+                }
+                await Task.Delay(TimeSpan.FromSeconds(cfg.intervaloImpressaoSegundos), stoppingToken);
+            }
+        }
+
+        public int GetTransitionCount()
+        {
+            return _lastTransitionCount;
         }
     }
 }

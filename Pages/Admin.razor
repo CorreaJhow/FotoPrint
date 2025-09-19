@@ -3,17 +3,16 @@
 @inject AdminConfigService AdminCfg
 @inject IJSRuntime JS
 @using System.ComponentModel.DataAnnotations
+@using System.IO
 
 @if (!IsLoggedIn)
 {
-    <div class="max-w-md mx-auto bg-white rounded-2xl shadow-xl p-8 mt-16">
-        <h2 class="text-3xl font-bold text-center mb-6 text-gray-800">
-            Área Administrativa
-        </h2>
-        <input class="block w-full mb-4 px-4 py-3 border rounded-xl border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+    <div class="max-w-md mx-auto bg-white rounded-2xl shadow-xl p-6 mt-16 sm:mt-32">
+        <h2 class="text-3xl font-bold text-center mb-6 text-gray-800">Área Administrativa</h2>
+        <input class="block w-full mb-4 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
                @bind="InputUser" placeholder="Usuário" autocomplete="username" />
-        <input class="block w-full mb-4 px-4 py-3 border rounded-xl border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
-               type="password" @bind="InputPassword" placeholder="Senha" autocomplete="current-password" />
+        <input type="password" class="block w-full mb-6 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
+               @bind="InputPassword" placeholder="Senha" autocomplete="current-password" />
         <button class="w-full px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition"
                 @onclick="TryLogin">
             Entrar
@@ -26,113 +25,86 @@
 }
 else
 {
-    <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl p-10 mt-12">
+    <div class="max-w-3xl mx-auto bg-white rounded-2xl shadow-xl p-6 sm:p-10 mt-12 sm:mt-20">
         <h2 class="text-3xl font-bold mb-6 text-gray-800">Configurações Administrativas</h2>
+
         @if (!string.IsNullOrEmpty(Message))
         {
-            <div class="mb-6 p-4 rounded-lg bg-green-50 text-green-800 border border-green-300 font-medium">@Message</div>
+            <div class="mb-6 p-4 rounded-lg bg-green-50 text-green-800 border border-green-300 font-medium text-center">
+                @Message
+            </div>
         }
+
         <EditForm Model="cfg" OnValidSubmit="Save" class="space-y-6">
             <DataAnnotationsValidator />
+
             <div>
-                <label class="block text-sm text-gray-600 mb-2 font-semibold">
+                <label for="intervalo" class="block text-sm font-semibold text-gray-600 mb-2">
                     Intervalo de impressão (segundos)
                 </label>
-                <InputNumber id="intervaloImpressao" class="w-full px-4 py-3 border rounded-xl border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                <InputNumber id="intervalo" class="w-full sm:w-64 border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400"
                              @bind-Value="cfg.intervaloImpressaoSegundos" />
             </div>
+
             <div>
-                <label class="block text-sm text-gray-600 mb-2 font-semibold" for="titulo">
-                    Título do Evento
-                </label>
-                <InputText id="titulo" class="w-full px-4 py-3 border rounded-xl border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                           @bind-Value="cfg.titulo" placeholder="Ex: Noivo & Noiva" />
+                <label for="titulo" class="block text-sm font-semibold text-gray-600 mb-2">Título do Evento</label>
+                <InputText id="titulo" class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                           placeholder="Ex: Noivo & Noiva" @bind-Value="cfg.titulo" />
             </div>
+
             <div>
-                <label class="block text-sm text-gray-600 mb-3 font-semibold">Fotos por lote</label>
-                <div class="flex gap-4">
+                <label class="block text-sm font-semibold text-gray-600 mb-3">Fotos por lote</label>
+                <div class="flex gap-4 max-w-xs">
                     <button type="button"
-                            class="flex-1 py-3 rounded-xl font-semibold transition
-                                               @(cfg.fotosPorLote == 2 ? "bg-blue-600 text-white" : "bg-blue-50 text-blue-700 hover:bg-blue-100")"
+                            class="flex-1 py-3 rounded-xl font-semibold transition @(cfg.fotosPorLote == 2 ? "bg-blue-600 text-white" : "bg-blue-50 text-blue-700 hover:bg-blue-100")"
                             @onclick="() => SelectFotosPorLote(2)">
                         2
                     </button>
                     <button type="button"
-                            class="flex-1 py-3 rounded-xl font-semibold transition
-                                               @(cfg.fotosPorLote == 3 ? "bg-blue-600 text-white" : "bg-blue-50 text-blue-700 hover:bg-blue-100")"
+                            class="flex-1 py-3 rounded-xl font-semibold transition @(cfg.fotosPorLote == 3 ? "bg-blue-600 text-white" : "bg-blue-50 text-blue-700 hover:bg-blue-100")"
                             @onclick="() => SelectFotosPorLote(3)">
                         3
                     </button>
                 </div>
             </div>
+
             <div class="space-y-6">
-                <div class="flex flex-col sm:flex-row sm:items-start sm:gap-4">
-                    <div class="flex-1">
-                        <label class="block text-sm text-gray-600 mb-2 font-semibold" for="caminhoImpressora">
-                            Pasta de Impressora
-                        </label>
-                        <InputText id="caminhoImpressora" class="w-full px-4 py-3 border rounded-xl border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                                   @bind-Value="cfg.caminhoPastaImpressora"
-                                   placeholder="Caminho completo da pasta para impressora" />
+                @foreach (var folder in FolderSettings)
+                {
+                    <div class="flex flex-col sm:flex-row sm:items-start sm:gap-4">
+                        <div class="flex-1">
+                            <label for="@folder.Id" class="block text-sm font-semibold text-gray-600 mb-2">@folder.Label</label>
+                            <InputText id="@folder.Id" class="w-full px-4 py-3 border rounded-xl border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                       @bind-Value="folder.Value" placeholder="@folder.Placeholder" />
+                        </div>
+                        <div class="text-center mt-2 sm:mt-0 flex flex-col gap-1 flex-shrink-0">
+                            <div class="text-xs text-gray-500 select-none mb-1">Ctrl+V</div>
+                            <button type="button"
+                                    class="px-4 py-3 rounded-xl bg-gray-200 hover:bg-gray-300 text-gray-700 flex items-center justify-center"
+                                    @onclick="() => PasteFromClipboard(folder.Id)" title="Colar caminho">
+                                📋
+                            </button>
+                            <button type="button"
+                                    class="px-4 py-3 rounded-xl bg-green-200 hover:bg-green-300 text-green-800 font-semibold"
+                                    @onclick="() => TestarDiretorio(folder.Value)">
+                                Testar pasta
+                            </button>
+                            @if (!string.IsNullOrEmpty(folder.TestMessage))
+                            {
+                                <div class="mt-2 p-3 rounded @folder.TestMessageClass whitespace-pre-line text-center max-w-md mx-auto">
+                                    @folder.TestMessage
+                                </div>
+                            }
+                        </div>
                     </div>
-                    <div class="text-center mt-1 sm:mt-0 flex flex-col gap-1">
-                        <div class="text-xs text-gray-500 select-none mb-1">Ctrl+V</div>
-                        <button type="button"
-                                class="px-4 py-3 rounded-xl bg-gray-200 hover:bg-gray-300 text-gray-700 flex items-center justify-center"
-                                @onclick="() => PasteFromClipboard(nameof(cfg.caminhoPastaImpressora))" title="Colar caminho">
-                            📋
-                        </button>
-                        <button type="button"
-                                class="px-4 py-3 rounded-xl bg-green-200 hover:bg-green-300 text-green-800 font-semibold"
-                                @onclick="() => TestarDiretorio(cfg.caminhoPastaImpressora)">
-                            Testar pasta
-                        </button>
-                        @if (!string.IsNullOrEmpty(TestMessageImpressora))
-                        {
-                            <div class="mt-2 p-3 rounded @TestMsgStyleImpressora whitespace-pre-line text-center max-w-md mx-auto">
-                                @TestMessageImpressora
-                            </div>
-                        }
-                    </div>
-                </div>
-                <div class="flex flex-col sm:flex-row sm:items-start sm:gap-4">
-                    <div class="flex-1">
-                        <label class="block text-sm text-gray-600 mb-2 font-semibold" for="caminhoBackup">
-                            Pasta de Backup
-                        </label>
-                        <InputText id="caminhoBackup" class="w-full px-4 py-3 border rounded-xl border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                                   @bind-Value="cfg.caminhoPastaBackup"
-                                   placeholder="Caminho completo da pasta para backup" />
-                    </div>
-                    <div class="text-center mt-1 sm:mt-0 flex flex-col gap-1">
-                        <div class="text-xs text-gray-500 select-none mb-1">Ctrl+V</div>
-                        <button type="button"
-                                class="px-4 py-3 rounded-xl bg-gray-200 hover:bg-gray-300 text-gray-700 flex items-center justify-center"
-                                @onclick="() => PasteFromClipboard(nameof(cfg.caminhoPastaBackup))" title="Colar caminho">
-                            📋
-                        </button>
-                        <button type="button"
-                                class="px-4 py-3 rounded-xl bg-green-200 hover:bg-green-300 text-green-800 font-semibold"
-                                @onclick="() => TestarDiretorio(cfg.caminhoPastaBackup)">
-                            Testar pasta
-                        </button>
-                        @if (!string.IsNullOrEmpty(TestMessageBackup))
-                        {
-                            <div class="mt-2 p-3 rounded @TestMsgStyleBackup whitespace-pre-line text-center max-w-md mx-auto">
-                                @TestMessageBackup
-                            </div>
-                        }
-                    </div>
-                </div>
+                }
             </div>
+
             <div class="flex flex-col md:flex-row md:justify-between gap-4 mt-8">
-                <button type="submit"
-                        class="flex-1 px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition">
+                <button type="submit" class="flex-1 px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition">
                     Salvar
                 </button>
-                <button type="button"
-                        class="flex-1 px-6 py-3 bg-gray-400 text-white rounded-xl font-semibold hover:bg-gray-500 transition"
-                        @onclick="Logout">
+                <button type="button" class="flex-1 px-6 py-3 bg-gray-400 text-white rounded-xl font-semibold hover:bg-gray-500 transition" @onclick="Logout">
                     Sair
                 </button>
             </div>
@@ -141,22 +113,141 @@ else
 }
 
 @code {
-    // ========== LOGIN logic ==========
     bool IsLoggedIn = false;
-    string InputUser = "", InputPassword = "", LoginError = "";
+    string InputUser = "";
+    string InputPassword = "";
+    string LoginError = "";
+    string MsgStyle = "";
 
-    void TryLogin()
+    FotoPrint.Models.Settings cfg = new();
+    string? Message;
+    string? TestMessageImpressora;
+    string TestMsgStyleImpressora = "";
+    string? TestMessageBackup;
+    string TestMsgStyleBackup = "";
+    string? TestMessageTransicao;
+    string TestMsgStyleTransicao = "";
+
+    protected override void OnInitialized()
     {
-        var cfgAdmin = AdminCfg.Load();
-        if (InputUser == cfgAdmin.AdminUsername && InputPassword == cfgAdmin.AdminPassword)
+        cfg = ConfigSvc.Load() ?? new FotoPrint.Models.Settings();
+        if (cfg.fotosPorLote != 2 && cfg.fotosPorLote != 3)
+            cfg.fotosPorLote = 2;
+        if (string.IsNullOrWhiteSpace(cfg.titulo))
+            cfg.titulo = "FotoPrint";
+
+        FolderSettings = new List<FolderSetting>
         {
-            IsLoggedIn = true;
-            LoginError = "";
-        }
-        else
+            new FolderSetting(nameof(cfg.caminhoPastaImpressora), "Pasta de Impressora", "Caminho completo para pasta da impressora", cfg.caminhoPastaImpressora),
+            new FolderSetting(nameof(cfg.caminhoPastaBackup), "Pasta de Backup", "Caminho completo para pasta de backup", cfg.caminhoPastaBackup),
+            new FolderSetting(nameof(cfg.caminhoPastaTransicao), "Pasta de Transição", "Caminho completo para pasta de transição", cfg.caminhoPastaTransicao)
+        };
+    }
+
+    class FolderSetting
+    {
+        public string Id { get; }
+        public string Label { get; }
+        public string Placeholder { get; }
+        public string Value { get; set; }
+        public string? TestMessage { get; set; }
+        public string TestMessageClass { get; set; } = "";
+
+        public FolderSetting(string id, string label, string placeholder, string value)
         {
-            LoginError = "Usuário ou senha inválidos";
+            Id = id;
+            Label = label;
+            Placeholder = placeholder;
+            Value = value;
         }
+    }
+
+    List<FolderSetting> FolderSettings = new();
+
+    void SelectFotosPorLote(int value)
+    {
+        cfg.fotosPorLote = value;
+        StateHasChanged();
+    }
+
+    void UpdateFolderSetting(string id, string val)
+    {
+        var folder = FolderSettings.FirstOrDefault(f => f.Id == id);
+        if (folder != null)
+        {
+            folder.Value = val;
+            StateHasChanged();
+        }
+    }
+
+    async Task PasteFromClipboard(string id)
+    {
+        try
+        {
+            var text = await JS.InvokeAsync<string>("navigator.clipboard.readText");
+            UpdateFolderSetting(id, text ?? "");
+        }
+        catch
+        {
+            // Ignora erros do clipboard
+        }
+    }
+
+    async Task TestarDiretorio(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            await JS.InvokeVoidAsync("alert", "Por favor, preencha um caminho válido.");
+            return;
+        }
+        try
+        {
+            var testFile = Path.Combine(path, $"test_{Guid.NewGuid()}.tmp");
+            await File.WriteAllTextAsync(testFile, "teste de permissão");
+            File.Delete(testFile);
+            var folder = FolderSettings.FirstOrDefault(f => f.Value == path);
+            if (folder != null)
+            {
+                folder.TestMessage = "Diretório válido/acessível!";
+                folder.TestMessageClass = "bg-green-100 text-green-800 border border-green-400";
+            }
+        }
+        catch (Exception ex)
+        {
+            var folder = FolderSettings.FirstOrDefault(f => f.Value == path);
+            if (folder != null)
+            {
+                folder.TestMessage = $"Erro ao acessar diretório: {ex.Message}";
+                folder.TestMessageClass = "bg-red-100 text-red-800 border border-red-400";
+            }
+        }
+        StateHasChanged();
+    }
+
+    void Save()
+    {
+        if (cfg.fotosPorLote != 2 && cfg.fotosPorLote != 3)
+            cfg.fotosPorLote = 2;
+
+        if (cfg.intervaloImpressaoSegundos < 5)
+            cfg.intervaloImpressaoSegundos = 5;
+
+        if (string.IsNullOrWhiteSpace(cfg.caminhoPastaImpressora))
+            cfg.caminhoPastaImpressora = @"C:\FotoPrint\Impressora";
+
+        if (string.IsNullOrWhiteSpace(cfg.caminhoPastaBackup))
+            cfg.caminhoPastaBackup = @"C:\FotoPrint\Backup";
+
+        if (string.IsNullOrWhiteSpace(cfg.caminhoPastaTransicao))
+            cfg.caminhoPastaTransicao = @"C:\FotoPrint\Transicao";
+
+        if (string.IsNullOrWhiteSpace(cfg.titulo))
+            cfg.titulo = "FotoPrint";
+
+        ConfigSvc.Save(cfg);
+
+        Message = "Configurações salvas com sucesso!";
+        MsgStyle = "bg-green-100 text-green-700 border border-green-400";
     }
 
     void Logout()
@@ -167,101 +258,17 @@ else
         LoginError = "";
     }
 
-    // ========== Admin Panel logic ==========
-    FotoPrint.Models.Settings cfg = new();
-    string? Message;
-    string? TestMessageImpressora;
-    string TestMsgStyleImpressora = "";
-    string? TestMessageBackup;
-    string TestMsgStyleBackup = "";
-
-    protected override void OnInitialized()
+    void TryLogin()
     {
-        cfg = ConfigSvc.Load();
-        if (cfg.fotosPorLote != 2 && cfg.fotosPorLote != 3)
-            cfg.fotosPorLote = 2; // default para 2
-    }
-
-    void SelectFotosPorLote(int value)
-    {
-        cfg.fotosPorLote = value;
-    }
-
-    void Save()
-    {
-        if (cfg.fotosPorLote != 2 && cfg.fotosPorLote != 3)
-            cfg.fotosPorLote = 2;
-        if (cfg.intervaloImpressaoSegundos < 5)
-            cfg.intervaloImpressaoSegundos = 5;
-        if (string.IsNullOrWhiteSpace(cfg.caminhoPastaImpressora))
-            cfg.caminhoPastaImpressora = @"C:\FotoPrint\Impressao"; // valor default
-        if (string.IsNullOrWhiteSpace(cfg.caminhoPastaBackup))
-            cfg.caminhoPastaBackup = @"C:\FotoPrint\Backup"; // valor default
-        if (string.IsNullOrWhiteSpace(cfg.titulo))
-            cfg.titulo = "FotoPrint"; // valor default para título
-        ConfigSvc.Save(cfg);
-        Message = "Configurações salvas.";
-    }
-
-    async Task PasteFromClipboard(string propName)
-    {
-        try
+        var adminCfg = AdminCfg.Load();
+        if (InputUser == adminCfg.AdminUsername && InputPassword == adminCfg.AdminPassword)
         {
-            var text = await JS.InvokeAsync<string>("navigator.clipboard.readText");
-            if (propName == nameof(cfg.caminhoPastaImpressora))
-            {
-                cfg.caminhoPastaImpressora = text;
-            }
-            else if (propName == nameof(cfg.caminhoPastaBackup))
-            {
-                cfg.caminhoPastaBackup = text;
-            }
-            StateHasChanged();
+            IsLoggedIn = true;
+            LoginError = "";
         }
-        catch
+        else
         {
-            // Ignora falha no acesso ao clipboard
+            LoginError = "Usuário ou senha inválidos";
         }
-    }
-
-    async Task TestarDiretorio(string path)
-    {
-        if (string.IsNullOrWhiteSpace(path))
-        {
-            await JS.InvokeVoidAsync("alert", "Caminho não pode ser vazio.");
-            return;
-        }
-        try
-        {
-            // Criar um arquivo de teste único
-            var fileName = Path.Combine(path, $"test_{Guid.NewGuid()}.tmp");
-            await File.WriteAllTextAsync(fileName, "teste de permissão");
-            // Apagar o arquivo depois
-            File.Delete(fileName);
-            if (path == cfg.caminhoPastaImpressora)
-            {
-                TestMessageImpressora = $"Diretório válido/acessível!";
-                TestMsgStyleImpressora = "bg-green-50 text-green-800 border border-green-300";
-            }
-            else if (path == cfg.caminhoPastaBackup)
-            {
-                TestMessageBackup = $"Diretório válido/acessível!";
-                TestMsgStyleBackup = "bg-green-50 text-green-800 border border-green-300";
-            }
-        }
-        catch (Exception)
-        {
-            if (path == cfg.caminhoPastaImpressora)
-            {
-                TestMessageImpressora = $"Erro ao acessar diretório:\n{path}\nTente outro!";
-                TestMsgStyleImpressora = "bg-red-50 text-red-800 border border-red-300";
-            }
-            else if (path == cfg.caminhoPastaBackup)
-            {
-                TestMessageBackup = $"Erro ao acessar diretório:\n{path}\nTente outro!";
-                TestMsgStyleBackup = "bg-red-50 text-red-800 border border-red-300";
-            }
-        }
-        StateHasChanged();
     }
 }

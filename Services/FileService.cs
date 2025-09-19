@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Components.Forms;
-
 namespace FotoPrint.Services
 {
     public class FileService
@@ -7,26 +6,22 @@ namespace FotoPrint.Services
         private readonly ConfigService _configService;
         private readonly PrintSchedulerService _printScheduler;
         private readonly string _wwwroot;
-        private string _staging;
         private string _backup;
+        private string _transicao;
         private string _impressora;
         private static readonly string[] Allowed = new[] { "image/jpeg", "image/png" };
-        private const long MaxBytes = 5 * 2048 * 2048; // 5MB
+        private const long MaxBytes = 5 * 1024 * 1024; // 5MB
 
         public FileService(IWebHostEnvironment env, ConfigService configService, PrintSchedulerService printScheduler)
         {
             _configService = configService;
             _printScheduler = printScheduler;
             _wwwroot = env.WebRootPath;
-
-            _staging = Path.Combine(_wwwroot, "Staging");
-            CriarPastaSeNaoExistir(_staging);
-
             AtualizarPastasConfiguradas();
         }
 
         /// <summary>
-        /// Atualiza as variáveis internas das pastas de backup e impressora com valores da configuração.
+        /// Atualiza as variáveis das pastas de backup e transição conforme configuração.
         /// </summary>
         public void AtualizarPastasConfiguradas()
         {
@@ -42,15 +37,13 @@ namespace FotoPrint.Services
                 : Path.Combine(_wwwroot, "Impressao");
             CriarPastaSeNaoExistir(_impressora);
 
-            // Logs para facilitar debug (remova em produção)
-            Console.WriteLine($"Backup folder: {_backup}");
-            Console.WriteLine($"Impressora folder: {_impressora}");
-            Console.WriteLine($"Staging folder: {_staging}");
+            _transicao = !string.IsNullOrWhiteSpace(cfg.caminhoPastaTransicao)
+                ? cfg.caminhoPastaTransicao
+                : Path.Combine(_wwwroot, "Transicao");
+            CriarPastaSeNaoExistir(_transicao);
         }
 
-        /// <summary>
-        /// Cria o diretório informado se ele não existir.
-        /// </summary>
+
         public void CriarPastaSeNaoExistir(string path)
         {
             if (!Directory.Exists(path))
@@ -60,7 +53,6 @@ namespace FotoPrint.Services
         public async Task<(bool ok, string message, List<string> savedRelative)> SaveUploadsAsync(IReadOnlyList<IBrowserFile> files)
         {
             AtualizarPastasConfiguradas();
-
             var saved = new List<string>();
             if (files == null || files.Count == 0)
                 return (false, "Nenhum arquivo selecionado.", saved);
@@ -78,22 +70,36 @@ namespace FotoPrint.Services
                     var safeName = string.Concat(Path.GetFileNameWithoutExtension(f.Name).Take(40));
                     var finalName = $"{Guid.NewGuid()}_{safeName}{ext}";
 
-                    var stagingPath = Path.Combine(_staging, finalName);
                     var backupPath = Path.Combine(_backup, finalName);
-                    var impressoraPath = Path.Combine(_impressora, finalName);
+                    var transicaoPath = Path.Combine(_transicao, finalName);
 
-                    await using var stream = f.OpenReadStream(MaxBytes);
-                    // Abre arquivo e escreve, garantindo a liberação antes das cópias
-                    await using (var fs = File.Create(stagingPath))
+                    // Salvar arquivo em backup
+                    await using (var stream = f.OpenReadStream(MaxBytes))
+                    await using (var fsBackup = File.Create(backupPath))
                     {
-                        await stream.CopyToAsync(fs);
+                        await stream.CopyToAsync(fsBackup);
                     }
 
-                    // Copia após o arquivo ser fechado para evitar bloqueio
-                    File.Copy(stagingPath, backupPath, overwrite: true);
-                    File.Copy(stagingPath, impressoraPath, overwrite: true);
+                    // Copiar o mesmo arquivo para pasta transicao
+                    File.Copy(backupPath, transicaoPath, overwrite: true);
 
-                    saved.Add(Path.Combine("Staging", finalName).Replace("\\", "/"));
+                    saved.Add(finalName);
+
+                    // Verificar quantidade de fotos na pasta transição
+                    var arquivosTransicao = Directory.GetFiles(_transicao);
+                    var cfg = _configService.Load();
+
+                    if (arquivosTransicao.Length == cfg.fotosPorLote)
+                    {
+                        // Mover todas as fotos da transição para a impressora
+                        foreach (var arquivo in arquivosTransicao)
+                        {
+                            var destImpressora = Path.Combine(_impressora, Path.GetFileName(arquivo));
+                            if (File.Exists(destImpressora))
+                                File.Delete(destImpressora);
+                            File.Move(arquivo, destImpressora);
+                        }
+                    }
                 }
                 catch (IOException ex)
                 {
@@ -102,21 +108,14 @@ namespace FotoPrint.Services
                 }
             }
 
-            // Após salvar arquivos, inicia o processo de impressão com delay
-            var cfg = _configService.Load();
-            var cts = new CancellationTokenSource();
-
-            await _printScheduler.IniciarProcessoImpressaoAsync(cfg.intervaloImpressaoSegundos, cfg.fotosPorLote, cts.Token);
-
-            return (true, $"{saved.Count} Fotos enviadas com sucesso, na fila de impressão.", saved);
+            return (true, $"{saved.Count} foto(s) enviada(s) com sucesso para a fila de impressão.", saved);
         }
+
 
         public string[] ListBackupImages()
         {
             AtualizarPastasConfiguradas();
-
             if (!Directory.Exists(_backup)) return Array.Empty<string>();
-
             return Directory.GetFiles(_backup)
                 .Where(p => p.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase)
                          || p.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase)

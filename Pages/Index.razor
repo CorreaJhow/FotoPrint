@@ -1,26 +1,29 @@
 ﻿@page "/"
 @inject FotoPrint.Services.ConfigService ConfigSvc
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
 
-<div class="container mx-auto px-4 py-20">
+<div class="container mx-auto px-20 py-20">
     <div class="max-w-xl mx-auto bg-white rounded-2xl shadow-xl p-10 text-center">
         <h1 class="text-4xl font-bold my-6">@titulo</h1>
-
         <p class="text-lg text-gray-600 mb-8">
             Envie as fotos e deixe a impressão com a gente.
         </p>
-        <a class="inline-flex items-center justify-center px-8 py-4 bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold rounded-xl transition text-xl"
-           href="/upload">
-            <i class="fas fa-cloud-upload-alt mr-2 text-blue-600"></i>
+        <NavLink class="inline-flex items-center justify-center px-8 py-4 bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold rounded-xl transition text-xl"
+                 href="/upload" activeClass="text-blue-900 font-bold">
+            <i class="fas fa-cloud-upload-alt mr-2"></i>
             Ir para Upload
-        </a>
+        </NavLink>
     </div>
-    <a href="https://wa.me/5516997120169" target="_blank" rel="noopener noreferrer" class="whatsapp-icon" aria-label="WhatsApp">
+
+    <!-- Links fixos -->
+    <a href="https://wa.me/5516997120169" target="_blank" class="whatsapp-icon" aria-label="WhatsApp" rel="noopener noreferrer">
         <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="white" viewBox="0 0 32 32">
             <path fill="#fff" fill-rule="evenodd" d="M16 4.222A11.778 11.778 0 1 0 16 27.778a11.778 11.778 0 0 0 0-23.556zm0 21.333a9.556 9.556 0 1 1 0-19.111 9.556 9.556 0 0 1 0 19.111zm4.505-6.357c-.247-.124-1.46-.72-1.687-.803-.226-.083-.391-.124-.557.124-.164.247-.633.803-.776.967-.143.164-.29.184-.537.062-.247-.124-1.043-.384-1.99-1.221-.735-.655-1.232-1.462-1.377-1.709-.144-.247-.016-.381.108-.505.111-.111.247-.289.371-.433.123-.144.164-.248.247-.412.083-.164.046-.309-.023-.433-.068-.124-.601-1.453-.844-1.99-.222-.48-.448-.414-.561-.421-.14-.007-.302-.008-.464-.008a.866.866 0 0 0-.626.293c-.216.236-.819.884-.819 2.157 0 1.273.835 2.508.953 2.682.117.174 1.643 2.623 4.012 3.682.561.242.998.387 1.344.495.566.18 1.078.155 1.488.096.455-.069 1.401-.567 1.601-1.116.198-.548.198-1.021.137-1.118-.065-.1-.222-.154-.463-.281z" clip-rule="evenodd" />
         </svg>
     </a>
 
-    <a href="https://www.instagram.com/kamera_ent?igsh=eWM3ZWZ4ZG1ldG9o" target="_blank" rel="noopener noreferrer" class="instagram-icon" aria-label="Instagram">
+    <a href="https://www.instagram.com/kamera_ent" target="_blank" class="instagram-icon" aria-label="Instagram" rel="noopener noreferrer">
         <svg xmlns="http://www.w3.org/2000/svg" fill="white" viewBox="0 0 24 24" width="24" height="24">
             <path d="M7.75,2h8.5A5.75,5.75,0,0,1,22,7.75v8.5A5.75,5.75,0,0,1,16.25,22h-8.5A5.75,5.75,0,0,1,2,16.25v-8.5A5.75,5.75,0,0,1,7.75,2ZM12,7a5,5,0,1,0,5,5A5,5,0,0,0,12,7Zm0,8.25A3.25,3.25,0,1,1,15.25,12,3.25,3.25,0,0,1,12,15.25Zm4.44-8.56a1.21,1.21,0,1,1-1.21-1.2A1.2,1.2,0,0,1,16.44,6.69Z" />
         </svg>
@@ -33,7 +36,27 @@
     protected override void OnInitialized()
     {
         var cfg = ConfigSvc.Load();
-        if (!string.IsNullOrWhiteSpace(cfg.titulo))
+        if (!string.IsNullOrWhiteSpace(cfg?.titulo))
             titulo = cfg.titulo;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && Navigation.Uri != Navigation.BaseUri)
+        {
+            try
+            {
+                // Verifica se 'window.getSelection' existe antes de chamar
+                var hasGetSelection = await JS.InvokeAsync<bool>("eval", "typeof window !== 'undefined' && window.getSelection !== undefined");
+                if (hasGetSelection)
+                {
+                    await JS.InvokeVoidAsync("eval", "window.getSelection().removeAllRanges()");
+                }
+            }
+            catch
+            {
+                // Ignora erro se método não disponível (ex: prerender)
+            }
+        }
     }
 }

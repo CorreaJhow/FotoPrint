@@ -1,58 +1,50 @@
 ﻿@page "/upload"
 @inject FotoPrint.Services.FileService FileSvc
 @inject FotoPrint.Services.ConfigService ConfigSvc
-
 @using Microsoft.AspNetCore.Components.Forms
 @using FotoPrint.Shared
 
-
-<div class="container mx-auto px-4 py-8">
-    <div class="text-center mb-8">
-        <h1 class="text-4xl font-bold my-6">@titulo</h1>
-
-        @*<p class="text-lg text-gray-600">Impressão Instantânea de Fotos</p>*@
+<div class="container mx-auto px-4 py-8 max-w-full">
+    <div class="text-center mb-8 px-2">
+        <h1 class="text-3xl sm:text-4xl font-bold my-6">@titulo</h1>
+        <p class="text-base sm:text-lg text-blue-800 mb-6">
+            Fotos na fila de impressão: <span>@ContadorTransition</span> / @MaxFila
+        </p>
     </div>
 
-    <div class="max-w-4xl mx-auto">
-        <div class="bg-white rounded-2xl shadow-xl p-8">
-            <h2 class="text-3xl font-bold text-center text-gray-800 mb-6">
-                <i class="fas fa-cloud-upload-alt text-blue-600 mr-3"></i>
+    <div class="max-w-full sm:max-w-4xl mx-auto px-2">
+        <div class="bg-white rounded-2xl shadow-xl p-6 sm:p-8 relative" style="@((isEnviando ? "pointer-events:none;opacity:0.6;" : ""))">
+            <h2 class="text-2xl sm:text-3xl font-bold text-center text-gray-800 mb-6">
+                <i class="fas fa-cloud-upload-alt text-blue-600 mr-2"></i>
                 Upload de Fotos
             </h2>
 
             @if (!string.IsNullOrEmpty(Message))
             {
-                @if (isEnviando)
-                {
-                    <LoadingStatus Message="Enviando fotos para impressão, por favor aguarde..." />
-                }
-                else
-                {
-                    <div class="mb-6 p-4 rounded-lg text-center font-medium @(MsgStyle)">
-                        @Message
-                    </div>
-                }
+                <div class="mb-6 p-3 sm:p-4 rounded-lg text-center font-medium @(MsgStyle)">
+                    @Message
+                </div>
             }
 
-            <p class="text-center text-gray-600 mb-8 text-lg">
-                Selecione exatamente <span class="font-semibold text-blue-600">@Slots</span> arquivos (JPG/PNG, até 5MB cada).
+            <p class="text-center text-gray-600 mb-8 text-sm sm:text-lg">
+                Selecione exatamente <span class="font-semibold text-blue-600">@Slots</span> foto (JPG/PNG).
             </p>
 
-            <div class="flex justify-center gap-8 mb-10 flex-wrap">
+            <div class="flex justify-center gap-6 mb-10 flex-wrap">
                 <!-- Slot 0 -->
-                <div class="upload-slot flex flex-col items-center" style="width:180px;">
-                    @if (IsLoading[0])
+                <div class="upload-slot flex flex-col items-center" style="width:140px; max-width:40vw;">
+                    @if (IsLoading.Count > 0 && IsLoading[0])
                     {
-                        <div class="w-36 h-36 flex items-center justify-center mb-3">
-                            <div class="h-8 w-8 border-4 border-blue-300 border-t-transparent rounded-full animate-spin"></div>
+                        <div class="@GetPreviewContainerClass() flex items-center justify-center mb-3">
+                            <div class="h-6 w-6 border-4 border-blue-300 border-t-transparent rounded-full animate-spin"></div>
                         </div>
                     }
                     else if (Previews.Count > 0 && Previews[0] != null)
                     {
-                        <div class="w-36 h-36 relative mb-3">
+                        <div class="@GetPreviewContainerClass() relative mb-3">
                             <img src="@Previews[0]" class="w-full h-full object-cover rounded-xl shadow-md border border-gray-300 preview-image" />
                             <button type="button"
-                                    class="absolute top-2 right-2 text-red-500 bg-white rounded-full shadow p-1 hover:bg-red-100 focus:outline-none"
+                                    class="absolute top-1 right-1 text-red-500 bg-white rounded-full shadow p-1 hover:bg-red-100 focus:outline-none"
                                     title="Remover foto"
                                     @onclick="() => RemoverFoto(0)">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -63,113 +55,59 @@
                     }
                     else
                     {
-                        <div class="w-36 h-36 flex items-center justify-center rounded-xl border-2 border-dashed border-gray-400 mb-3 text-gray-400 select-none bg-gray-50">
-                            <i class="fas fa-image text-3xl opacity-50 mb-2"></i><span class="text-sm">Preview</span>
+                        <div class="@GetPreviewContainerClass() flex items-center justify-center rounded-xl border-2 border-dashed border-gray-400 mb-3 text-gray-400 select-none bg-gray-50">
+                            <i class="fas fa-image text-2xl opacity-50 mb-2"></i>
+                            <span class="text-xs sm:text-sm">Preview</span>
                         </div>
                     }
+
                     <InputFile class="hidden" id="file-input-0"
-                               OnChange="@(async e => await OnFileSelected(e, 0))" accept="image/jpeg,image/png" />
+                               OnChange="@(async e => await OnFileSelected(e, 0))" accept="image/jpeg,image/png" disabled="@isEnviando" />
                     <label for="file-input-0"
-                           class="file-label bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium py-2 px-4 rounded-lg cursor-pointer transition flex items-center justify-center w-full">
+                           class="file-label bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium py-2 px-3 rounded-lg cursor-pointer transition flex items-center justify-center w-full @(isEnviando ? "cursor-not-allowed opacity-50" : "") text-sm sm:text-base">
                         <i class="fas fa-upload mr-2"></i>Selecionar
                     </label>
-                    <p class="text-xs mt-2 text-gray-500 font-medium">Foto 1</p>
                 </div>
-
-                <!-- Slot 1 -->
-                <div class="upload-slot flex flex-col items-center" style="width:180px;">
-                    @if (IsLoading[1])
-                    {
-                        <div class="w-36 h-36 flex items-center justify-center mb-3">
-                            <div class="h-8 w-8 border-4 border-blue-300 border-t-transparent rounded-full animate-spin"></div>
-                        </div>
-                    }
-                    else if (Previews.Count > 1 && Previews[1] != null)
-                    {
-                        <div class="w-36 h-36 relative mb-3">
-                            <img src="@Previews[1]" class="w-full h-full object-cover rounded-xl shadow-md border border-gray-300 preview-image" />
-                            <button type="button"
-                                    class="absolute top-2 right-2 text-red-500 bg-white rounded-full shadow p-1 hover:bg-red-100 focus:outline-none"
-                                    title="Remover foto"
-                                    @onclick="() => RemoverFoto(1)">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="w-36 h-36 flex items-center justify-center rounded-xl border-2 border-dashed border-gray-400 mb-3 text-gray-400 select-none bg-gray-50">
-                            <i class="fas fa-image text-3xl opacity-50 mb-2"></i><span class="text-sm">Preview</span>
-                        </div>
-                    }
-                    <InputFile class="hidden" id="file-input-1"
-                               OnChange="@(async e => await OnFileSelected(e, 1))" accept="image/jpeg,image/png" />
-                    <label for="file-input-1"
-                           class="file-label bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium py-2 px-4 rounded-lg cursor-pointer transition flex items-center justify-center w-full">
-                        <i class="fas fa-upload mr-2"></i>Selecionar
-                    </label>
-                    <p class="text-xs mt-2 text-gray-500 font-medium">Foto 2</p>
-                </div>
-
-                <!-- Slot 2 só se Slots for 3 -->
-                @if (Slots >= 3)
-                {
-                    <div class="upload-slot flex flex-col items-center" style="width:180px;">
-                        @if (IsLoading[2])
-                        {
-                            <div class="w-36 h-36 flex items-center justify-center mb-3">
-                                <div class="h-8 w-8 border-4 border-blue-300 border-t-transparent rounded-full animate-spin"></div>
-                            </div>
-                        }
-                        else if (Previews.Count > 2 && Previews[2] != null)
-                        {
-                            <div class="w-36 h-36 relative mb-3">
-                                <img src="@Previews[2]" class="w-full h-full object-cover rounded-xl shadow-md border border-gray-300 preview-image" />
-                                <button type="button"
-                                        class="absolute top-2 right-2 text-red-500 bg-white rounded-full shadow p-1 hover:bg-red-100 focus:outline-none"
-                                        title="Remover foto"
-                                        @onclick="() => RemoverFoto(2)">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
-                            </div>
-                        }
-                        else
-                        {
-                            <div class="w-36 h-36 flex items-center justify-center rounded-xl border-2 border-dashed border-gray-400 mb-3 text-gray-400 select-none bg-gray-50">
-                                <i class="fas fa-image text-3xl opacity-50 mb-2"></i><span class="text-sm">Preview</span>
-                            </div>
-                        }
-                        <InputFile class="hidden" id="file-input-2"
-                                   OnChange="@(async e => await OnFileSelected(e, 2))" accept="image/jpeg,image/png" />
-                        <label for="file-input-2"
-                               class="file-label bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium py-2 px-4 rounded-lg cursor-pointer transition flex items-center justify-center w-full">
-                            <i class="fas fa-upload mr-2"></i>Selecionar
-                        </label>
-                        <p class="text-xs mt-2 text-gray-500 font-medium">Foto 3</p>
-                    </div>
-                }
             </div>
 
-            <div class="flex justify-center">
-                <button class="px-12 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl text-xl font-bold w-full max-w-md disabled:opacity-50 disabled:cursor-not-allowed send-button hover:from-green-600 hover:to-green-700"
-                        @onclick="ConfirmUpload" disabled="@(!CanSend)">
+            @if (isEnviando)
+            {
+                <div class="absolute inset-0 bg-white bg-opacity-75 flex flex-col items-center justify-center z-50 px-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" version="1.0" width="48px" height="48px" viewBox="0 0 128 128" xml:space="preserve">
+                    <g>
+                    <path d="M38.52 33.37L21.36 16.2A63.6 63.6 0 0 1 59.5.16v24.3a39.5 39.5 0 0 0-20.98 8.92z" fill="#4192ff" />
+                    <path d="M38.52 33.37L21.36 16.2A63.6 63.6 0 0 1 59.5.16v24.3a39.5 39.5 0 0 0-20.98 8.92z" fill="#d0e4ff" transform="rotate(45 64 64)" />
+                    <path d="M38.52 33.37L21.36 16.2A63.6 63.6 0 0 1 59.5.16v24.3a39.5 39.5 0 0 0-20.98 8.92z" fill="#d0e4ff" transform="rotate(90 64 64)" />
+                    <path d="M38.52 33.37L21.36 16.2A63.6 63.6 0 0 1 59.5.16v24.3a39.5 39.5 0 0 0-20.98 8.92z" fill="#d0e4ff" transform="rotate(135 64 64)" />
+                    <path d="M38.52 33.37L21.36 16.2A63.6 63.6 0 0 1 59.5.16v24.3a39.5 39.5 0 0 0-20.98 8.92z" fill="#d0e4ff" transform="rotate(180 64 64)" />
+                    <path d="M38.52 33.37L21.36 16.2A63.6 63.6 0 0 1 59.5.16v24.3a39.5 39.5 0 0 0-20.98 8.92z" fill="#d0e4ff" transform="rotate(225 64 64)" />
+                    <path d="M38.52 33.37L21.36 16.2A63.6 63.6 0 0 1 59.5.16v24.3a39.5 39.5 0 0 0-20.98 8.92z" fill="#d0e4ff" transform="rotate(270 64 64)" />
+                    <path d="M38.52 33.37L21.36 16.2A63.6 63.6 0 0 1 59.5.16v24.3a39.5 39.5 0 0 0-20.98 8.92z" fill="#d0e4ff" transform="rotate(315 64 64)" />
+                    <animateTransform attributeName="transform" type="rotate" values="0 64 64;45 64 64;90 64 64;135 64 64;180 64 64;225 64 64;270 64 64;315 64 64" calcMode="discrete" dur="720ms" repeatCount="indefinite" />
+                            </g>
+                        </svg>
+                    <p class="text-lg sm:text-xl font-semibold text-gray-700 mt-4 text-center px-3">Processando upload, por favor aguarde...</p>
+                </div>
+            }
+
+            <div class="flex justify-center mt-4 px-2">
+                <button class="px-8 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl text-base sm:text-xl font-bold w-full max-w-md
+                               disabled:opacity-50 disabled:cursor-not-allowed send-button hover:from-green-600 hover:to-green-700"
+                        @onclick="ConfirmUpload" disabled="@(!CanSend || isEnviando)">
                     <span>Enviar @(SelectedFiles.Count(f => f != null)) foto(s)</span>
                     <i class="fas fa-paper-plane ml-2"></i>
                 </button>
             </div>
         </div>
     </div>
-    <a href="https://wa.me/5516997120169" target="_blank" rel="noopener noreferrer" class="whatsapp-icon" aria-label="WhatsApp">
+    <!-- Links fixos -->
+    <a href="https://wa.me/5516997120169" target="_blank" class="whatsapp-icon" aria-label="WhatsApp" rel="noopener noreferrer">
         <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="white" viewBox="0 0 32 32">
             <path fill="#fff" fill-rule="evenodd" d="M16 4.222A11.778 11.778 0 1 0 16 27.778a11.778 11.778 0 0 0 0-23.556zm0 21.333a9.556 9.556 0 1 1 0-19.111 9.556 9.556 0 0 1 0 19.111zm4.505-6.357c-.247-.124-1.46-.72-1.687-.803-.226-.083-.391-.124-.557.124-.164.247-.633.803-.776.967-.143.164-.29.184-.537.062-.247-.124-1.043-.384-1.99-1.221-.735-.655-1.232-1.462-1.377-1.709-.144-.247-.016-.381.108-.505.111-.111.247-.289.371-.433.123-.144.164-.248.247-.412.083-.164.046-.309-.023-.433-.068-.124-.601-1.453-.844-1.99-.222-.48-.448-.414-.561-.421-.14-.007-.302-.008-.464-.008a.866.866 0 0 0-.626.293c-.216.236-.819.884-.819 2.157 0 1.273.835 2.508.953 2.682.117.174 1.643 2.623 4.012 3.682.561.242.998.387 1.344.495.566.18 1.078.155 1.488.096.455-.069 1.401-.567 1.601-1.116.198-.548.198-1.021.137-1.118-.065-.1-.222-.154-.463-.281z" clip-rule="evenodd" />
         </svg>
     </a>
 
-    <a href="https://www.instagram.com/kamera_ent?igsh=eWM3ZWZ4ZG1ldG9o" target="_blank" rel="noopener noreferrer" class="instagram-icon" aria-label="Instagram">
+    <a href="https://www.instagram.com/kamera_ent" target="_blank" class="instagram-icon" aria-label="Instagram" rel="noopener noreferrer">
         <svg xmlns="http://www.w3.org/2000/svg" fill="white" viewBox="0 0 24 24" width="24" height="24">
             <path d="M7.75,2h8.5A5.75,5.75,0,0,1,22,7.75v8.5A5.75,5.75,0,0,1,16.25,22h-8.5A5.75,5.75,0,0,1,2,16.25v-8.5A5.75,5.75,0,0,1,7.75,2ZM12,7a5,5,0,1,0,5,5A5,5,0,0,0,12,7Zm0,8.25A3.25,3.25,0,1,1,15.25,12,3.25,3.25,0,0,1,12,15.25Zm4.44-8.56a1.21,1.21,0,1,1-1.21-1.2A1.2,1.2,0,0,1,16.44,6.69Z" />
         </svg>
@@ -177,23 +115,38 @@
 </div>
 
 @code {
-    int Slots = 2;
+    int Slots = 1;
     string? Message;
     string MsgStyle = "bg-blue-50 text-blue-800 border border-blue-300";
     List<string?> Previews = new();
     List<bool> IsLoading = new();
     List<IBrowserFile?> SelectedFiles = new();
+    int MaxFila = 0;
     private string titulo = "FotoPrint";
+    int ContadorTransition = 0;
+    bool isEnviando = false;
+    DateTime? ultimoUpload = null;
 
     protected override void OnInitialized()
     {
         var cfg = ConfigSvc.Load();
-        Slots = cfg.fotosPorLote is >= 2 and <= 3 ? cfg.fotosPorLote : 2;
+        MaxFila = cfg.fotosPorLote >= 1 ? cfg.fotosPorLote : 2;
+        Slots = 1;
         Previews = Enumerable.Range(0, Slots).Select(_ => (string?)null).ToList();
         SelectedFiles = Enumerable.Range(0, Slots).Select(_ => (IBrowserFile?)null).ToList();
         IsLoading = Enumerable.Range(0, Slots).Select(_ => false).ToList();
+        AtualizarContadorTransition();
         if (!string.IsNullOrWhiteSpace(cfg.titulo))
             titulo = cfg.titulo;
+    }
+
+    string GetPreviewContainerClass()
+    {
+        if (MaxFila == 3)
+        {
+            return "h-40 w-24"; // proporção vertical (aprox. 8,1 x 4,5 cm)
+        }
+        return "w-28 h-28"; // quadrado
     }
 
     bool CanSend => SelectedFiles.All(f => f != null);
@@ -206,8 +159,7 @@
         StateHasChanged();
 
         var file = e.File;
-        if (file == null)
-            return;
+        if (file == null) return;
 
         if (file.Size > 5 * 1024 * 1024)
         {
@@ -215,6 +167,7 @@
             MsgStyle = "bg-red-100 text-red-800 border border-red-300";
             Previews[slotIndex] = null;
             SelectedFiles[slotIndex] = null;
+            IsLoading[slotIndex] = false;
             StateHasChanged();
             return;
         }
@@ -225,6 +178,7 @@
             MsgStyle = "bg-red-100 text-red-800 border border-red-300";
             Previews[slotIndex] = null;
             SelectedFiles[slotIndex] = null;
+            IsLoading[slotIndex] = false;
             StateHasChanged();
             return;
         }
@@ -233,51 +187,107 @@
         await file.OpenReadStream(5 * 1024 * 1024).CopyToAsync(ms);
         var base64 = Convert.ToBase64String(ms.ToArray());
         var mime = file.ContentType;
+
         Previews[slotIndex] = $"data:{mime};base64,{base64}";
         SelectedFiles[slotIndex] = file;
         IsLoading[slotIndex] = false;
         StateHasChanged();
     }
 
-    bool isEnviando = false;
-
     async Task ConfirmUpload()
     {
+        var cfg = ConfigSvc.Load();
         if (!CanSend)
         {
-            Message = $"Por favor, selecione exatamente {Slots} arquivo(s).";
+            Message = "Por favor, selecione uma foto.";
             MsgStyle = "bg-yellow-50 text-yellow-800 border border-yellow-300";
             return;
         }
 
+        if (ultimoUpload.HasValue)
+        {
+            var diff = DateTime.UtcNow - ultimoUpload.Value;
+            if (diff.TotalSeconds < cfg.intervaloImpressaoSegundos)
+            {
+                var segundosRestantes = (int)(cfg.intervaloImpressaoSegundos - diff.TotalSeconds);
+                Message = $"Por favor, aguarde {segundosRestantes} segundo(s) antes de enviar outra foto.";
+                MsgStyle = "bg-yellow-50 text-yellow-800 border border-yellow-300";
+                return;
+            }
+        }
+
         isEnviando = true;
-        Message = "Enviando fotos para impressão, por favor aguarde...";
+        Message = "Enviando foto, por favor aguarde...";
         MsgStyle = "bg-blue-50 text-blue-800 border border-blue-300";
         StateHasChanged();
 
+        await Task.Delay(cfg.intervaloImpressaoSegundos * 1000);
+
         var filesToSend = SelectedFiles.Where(f => f != null).ToList();
+        var file = filesToSend.First();
 
-        var (ok, msg, _) = await FileSvc.SaveUploadsAsync(filesToSend);
+        using var ms = new MemoryStream();
+        await file.OpenReadStream(5 * 1024 * 1024).CopyToAsync(ms);
+        var fileName = $"{Guid.NewGuid()}_{file.Name}";
 
-        isEnviando = false;
-        Message = msg;
-        MsgStyle = ok
-            ? "bg-green-50 text-green-800 border border-green-300"
-            : "bg-red-50 text-red-800 border border-red-300";
+        var caminhoBackup = Path.Combine(cfg.caminhoPastaBackup ?? @"C:\FotoPrint\Backup", fileName);
+        var caminhoTransicao = Path.Combine(cfg.caminhoPastaTransicao ?? @"C:\FotoPrint\Transicao", fileName);
+        var caminhoImpressora = Path.Combine(cfg.caminhoPastaImpressora ?? @"C:\FotoPrint\Impressao", fileName);
 
-        if (ok)
+        await File.WriteAllBytesAsync(caminhoBackup, ms.ToArray());
+
+        var arquivosTransicao = Directory.Exists(cfg.caminhoPastaTransicao ?? @"C:\FotoPrint\Transicao")
+            ? Directory.GetFiles(cfg.caminhoPastaTransicao ?? @"C:\FotoPrint\Transicao")
+            : Array.Empty<string>();
+
+        if (arquivosTransicao.Length + 1 == cfg.fotosPorLote)
         {
-            SelectedFiles = Enumerable.Range(0, Slots).Select(_ => (IBrowserFile?)null).ToList();
-            Previews = Enumerable.Range(0, Slots).Select(_ => (string?)null).ToList();
+            foreach (var arquivo in arquivosTransicao)
+            {
+                var destImpressora = Path.Combine(cfg.caminhoPastaImpressora ?? @"C:\FotoPrint\Impressao", Path.GetFileName(arquivo));
+                if (File.Exists(destImpressora)) File.Delete(destImpressora);
+                File.Move(arquivo, destImpressora);
+            }
+            await File.WriteAllBytesAsync(caminhoImpressora, ms.ToArray());
         }
+        else
+        {
+            await File.WriteAllBytesAsync(caminhoTransicao, ms.ToArray());
+        }
+
+        ultimoUpload = DateTime.UtcNow;
+        Message = "Foto enviada!";
+        MsgStyle = "bg-green-50 text-green-800 border border-green-300";
+        isEnviando = false;
+
+        SelectedFiles = Enumerable.Range(0, Slots).Select(_ => (IBrowserFile?)null).ToList();
+        Previews = Enumerable.Range(0, Slots).Select(_ => (string?)null).ToList();
+
+        AtualizarContadorTransition();
         StateHasChanged();
     }
 
     void RemoverFoto(int slotIndex)
     {
-        Previews[slotIndex] = null;
-        SelectedFiles[slotIndex] = null;
-        IsLoading[slotIndex] = false;
+        if (Previews.Count > slotIndex) Previews[slotIndex] = null;
+        if (SelectedFiles.Count > slotIndex) SelectedFiles[slotIndex] = null;
+        if (IsLoading.Count > slotIndex) IsLoading[slotIndex] = false;
     }
 
+    int GetTransitionCount()
+    {
+        var pastaTransicao = ConfigSvc.Load().caminhoPastaTransicao ?? @"C:\FotoPrint\Transicao";
+        return Directory.Exists(pastaTransicao)
+            ? Directory.GetFiles(pastaTransicao).Length
+            : 0;
+    }
+
+    void AtualizarContadorTransition()
+    {
+        var pastaTransicao = ConfigSvc.Load().caminhoPastaTransicao ?? @"C:\FotoPrint\Transicao";
+        if (Directory.Exists(pastaTransicao))
+            ContadorTransition = Directory.GetFiles(pastaTransicao).Length;
+        else
+            ContadorTransition = 0;
+    }
 }

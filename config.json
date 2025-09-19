@@ -1,7 +1,8 @@
 {
-  "intervaloImpressaoSegundos": 10,
-  "fotosPorLote": 2,
+  "intervaloImpressaoSegundos": 5,
+  "fotosPorLote": 3,
   "caminhoPastaImpressora": "C:\\FotoPrint\\Impressao",
   "caminhoPastaBackup": "C:\\FotoPrint\\Backup",
-  "titulo": "Tico \u0026 Ta"
+  "caminhoPastaTransicao": "C:\\FotoPrint\\Transicao",
+  "titulo": "Teste \u0026 Teste1"
 }
